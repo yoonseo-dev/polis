@@ -27,7 +27,7 @@ public class NeighborSelector {
         this.random = random;
     }
 
-    // 지정된 행위자(self)와 만나는 이웃의 인덱스를 반환. 중복 없이 랜덤하게 선택.
+    // 만나는 neighbors의 수를 랜덤하게 지정.
     public List<Integer> selectNeighbors(int self) {
         Set<Integer> neighbors = new HashSet<>();
 
@@ -38,6 +38,7 @@ public class NeighborSelector {
             }
         }
 
+        // copyof()를 사용하여 불변 리스트를 반환. 외부에서 수정 불가.
         return List.copyOf(neighbors);
     }
 }

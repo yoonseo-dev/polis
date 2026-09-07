@@ -1,13 +1,17 @@
+// 틱 루프와 가상 스레드 실행기를 관리하는 엔진 핵심 클래스.
+// 행위자들은 배열을 공유해서 읽는 대신, agents 리스트에서 얻은 이웃 Agent 참조를 직접 들고
+// 그 mailbox에 opinion을 넣는 "직접 참조 라우팅" 방식으로 통신한다.
 package com.sys.polis.polis_engine.world;
 
 import com.sys.polis.polis_engine.agent.Agent;
 import com.sys.polis.polis_engine.agent.AgentState;
 import com.sys.polis.polis_engine.rule.UpdateRule;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Simulation {
 
@@ -18,82 +22,66 @@ public class Simulation {
 
     private final UpdateRule rule;
 
-    // 현재 틱에서의 행위자 상태 배열과 다음 틱에서의 상태 배열
-    private AgentState[] current;
-
-    private AgentState[] next;
-
-    // 생성자에서 시뮬레이션 구성 요소를 초기화하고, 현재 상태 배열을 설정
+    // 생성자에서 시뮬레이션 구성 요소를 초기화한다. 상태는 각 Agent 객체가 직접 들고 있으므로
+    // (이전처럼 별도 current/next 배열로 복사해두지 않는다) 여기서 할 일은 참조 저장뿐이다.
     public Simulation(List<Agent> agents, NeighborSelector neighborSelector, UpdateRule rule) {
         this.agents = agents;
         this.neighborSelector = neighborSelector;
         this.rule = rule;
-
-        // 현재 상태 배열과 다음 상태 배열을 초기화
-        int n = agents.size();
-        this.current = new AgentState[n];
-        this.next = new AgentState[n];
-        for (int i = 0; i < n; i++) {
-            current[i] = agents.get(i).getCurrentState();
-        }
     }
 
-    // 시뮬레이션을 지정된 틱 수만큼 실행하는 메서드. 각 틱마다 runOneTick() 호출
+    // 시뮬레이션을 지정된 틱 수만큼 실행하는 메서드.
+    // ExecutorService를 run() 호출 전체에서 재사용한다(틱마다 새로 만들면 스레드 풀 생성 비용이 반복됨).
+    // try-with-resources: ExecutorService는 AutoCloseable이라 블록을 벗어나면 close()가 자동 호출되어
+    // 그 시점까지 제출된 작업이 모두 끝날 때까지 기다린 뒤 종료한다.
     public void run(int tickCount) throws InterruptedException {
-        for (int tick = 0; tick < tickCount; tick++) {
-            runOneTick();
+        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            for (int tick = 0; tick < tickCount; tick++) {
+                runOneTick(executor);
+            }
         }
     }
 
-    // 한 틱 동안 모든 행위자의 상태를 업데이트하는 메서드.
-    // 내부적으로 current와 next 배열을 스왑하고, Agent 객체에 확정된 상태를 반영
-    // InvokeAll()를 사용하여 병렬로 업데이트 수행
-    // throws InterruptedException 은 runOneTick() 메서드에 선언되어 있으므로,
-    // 여기서 예외를 처리하지 않고 상위로 전달한다.
-    // 또한 연관된 모든 메서드에 throws InterruptedException 를 선언해야 한다.
-    private void runOneTick() throws InterruptedException {
+    // 한 틱을 "보내기"와 "받아서 갱신하기" 2단계로 나눠 실행한다.
+    // 두 단계 사이, 그리고 각 단계 끝에서 invokeAll()로 전원 완료를 기다려야
+    // 이번 틱에 보낸 메시지와 다음 틱에 보낼 메시지가 섞이지 않는다
+    // (가상 스레드로 병렬 처리하면서도 틱 경계는 동기화 유지 — CLAUDE.md M0 결정론 요구사항).
+    private void runOneTick(ExecutorService executor) throws InterruptedException {
 
-        ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
-        // invokeAll() 메서드가 Callable을 요구하므로, Runnable 대신 Callable<Void>를 사용한다.
-        List<Callable<Void>> tasks = new java.util.ArrayList<>();
-
-        for (int i = 0; i < current.length; i++) {
-
-            List<AgentState> neighborStates = neighborSelector.selectNeighbors(i).stream()
-                    .map(neighborIndex -> current[neighborIndex])
-                    .toList();
-
-            // 람다 안에서 i를 직접 참조하면, for 루프가 끝난 후 i는 current.length가 되어버리므로,
-            // final 변수에 복사하여 사용한다.
-            final int index = i;
-
-            tasks.add(() -> {
-                next[index] = rule.update(current[index], neighborStates);
+        // Phase 1(보내기): 각 행위자가 이번 틱에 뽑힌 이웃의 mailbox에 자기 opinion을 직접 넣는다.
+        List<Callable<Void>> sendTasks = new ArrayList<>();
+        for (int i = 0; i < agents.size(); i++) {
+            Agent self = agents.get(i);
+            List<Integer> neighborIndexes = neighborSelector.selectNeighbors(i);
+            sendTasks.add(() -> {
+                for (int neighborIndex : neighborIndexes) {
+                    Agent neighbor = agents.get(neighborIndex); // 리스트에서 얻은 참조를 그대로 사용 — 직접 참조 라우팅
+                    neighbor.receiveMessage(self.getOpinion());
+                }
                 return null;
             });
-
-            // throws InterruptedException 은 runOneTick() 메서드에 선언되어 있으므로,
-            // 여기서 예외를 처리하지 않고 상위로 전달한다.
         }
+        // invokeAll()은 제출한 작업이 전부 끝날 때까지 블록된다 — 이 틱의 발신이 모두 끝난 뒤에야 다음 단계로 넘어간다.
+        executor.invokeAll(sendTasks);
 
-        try {
-            executor.invokeAll(tasks);
-        } catch (InterruptedException e) {
-            // 알아서 close() 호출되므로 executor.shutdown()은 필요 없다.
+        // Phase 2(받아서 갱신하기): 각 행위자가 이번 틱에 도착한 메시지를 모두 꺼내 갱신 규칙을 적용한다.
+        List<Callable<Void>> receiveTasks = new ArrayList<>();
+        for (Agent self : agents) {
+            receiveTasks.add(() -> {
+                List<AgentState> received = new ArrayList<>();
+                Double opinion;
+                // pollMessage()는 논블로킹 — 아무도 이 행위자를 이웃으로 고르지 않았으면 즉시 null.
+                while ((opinion = self.pollMessage()) != null) {
+                    received.add(new AgentState(self.getId(), opinion));
+                }
+                if (!received.isEmpty()) {
+                    AgentState next = rule.update(self.getCurrentState(), received);
+                    self.applyNextState(next);
+                }
+                return null;
+            });
         }
-
-        // 한꺼번에 모아서 한 번만 invokeAll() 호출.
-        // invokeAll()은 모든 작업이 완료될 때까지 블록된다.
-
-        // 스왑: 배열 내용을 복사하지 않고 변수(참조, 화살표)만 맞바꾼다 — 배열 두 개는 재사용된다.
-        AgentState[] tmp = current;
-        current = next;
-        next = tmp;
-
-        // Agent 객체에 확정된 상태를 반영한다 (Agent.java의 "버퍼 순회 후 applyNextState" 계약).
-        for (int i = 0; i < agents.size(); i++) {
-            agents.get(i).applyNextState(current[i]);
-        }
+        executor.invokeAll(receiveTasks);
     }
 
     /** 가장 최근 틱 종료 시점의 전체 행위자 목록. 콘솔 출력·지표 수집이 여기서 상태를 읽는다. */

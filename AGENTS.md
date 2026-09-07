@@ -1,4 +1,4 @@
-# CLAUDE.md — Polis ABM 시뮬레이터
+# AGENTS.md — Polis ABM 시뮬레이터
 
 ABM(Agent-Based Modeling) 기반 정치 양극화 시뮬레이션 엔진. 단순한 행위자 규칙에서 거시적 양극화가 창발하는지 관찰한다.
 

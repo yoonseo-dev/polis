@@ -45,6 +45,12 @@ public class Agent {
         return mailbox.take();
     }
 
+    // 메일박스가 비어 있으면 즉시 null을 반환하는 논블로킹 조회.
+    // take()와 달리 상대가 안 보냈을 수도 있는 상황(직접 참조 라우팅에서 이번 틱에 아무도 안 골랐을 때)에 블로킹 없이 확인할 때 쓴다.
+    public Double pollMessage() {
+        return mailbox.poll();
+    }
+
     // opinion을 업데이트하는 메서드, 내부 상태를 변경
     @Override
     public String toString() {
