@@ -17,9 +17,10 @@ public class Main {
     public static void main(String[] args) throws InterruptedException {
 
         // 파라미터 정의 — 행위자 수, 틱 수, mu(학습률), threshold(임계값)
-        // CLAUDE.md 3-4: M0는 전역 상수로 시작 (변수 최소화)
-        final int AGENT_COUNT = 100;
-        final int TICK_COUNT = 100;
+        // CLAUDE.md 3-4: M0는 전역 상수로 시작(변수 최소화)했지만, M1 확장성 실험(수천~수만 규모)을 위해
+        // 커맨드라인 인자로 덮어쓸 수 있게만 열어둔다 — 인자가 없으면 기존 M0 기본값(100)과 동일하게 동작.
+        final int AGENT_COUNT = args.length > 0 ? Integer.parseInt(args[0]) : 100;
+        final int TICK_COUNT = args.length > 1 ? Integer.parseInt(args[1]) : 100;
         // mu가 0.1일 경우 동화율이 너무 높아서 틱 중간에 극단적 성향이 매우 높아짐.
         // mu를 0.01로 낮추면 동화율이 낮아져서 극단적 성향이 줄어들었다.
         final double mu = 0.01; // 학습률
@@ -46,15 +47,24 @@ public class Main {
         // 시뮬레이션 생성 — agents, neighborSelector, updateRule을 받아 틱 루프(직접 참조 라우팅)를 관리한다.
         Simulation simulation = new Simulation(agents, neighborSelector, updateRule);
 
+        System.out.println("AGENT_COUNT=" + AGENT_COUNT + ", TICK_COUNT=" + TICK_COUNT);
+
+        // System.nanoTime()으로 벽시계 경과 시간을 재서, 행위자 수를 수천~수만으로 올렸을 때도
+        // 안정적으로(에러·행 없이) 끝나는지, 걸리는 시간이 규모에 비해 합리적인지 확인한다(M1 확장성 실험).
+        long startNanos = System.nanoTime();
+
         printDistribution("초기: ", agents);
         simulation.run(TICK_COUNT / 2);
         printDistribution("중간: ", agents);
         simulation.run(TICK_COUNT / 2);
         printDistribution("최종: ", agents);
 
+        long elapsedMillis = (System.nanoTime() - startNanos) / 1_000_000;
+
         System.out.println("Assimilation Count: " + updateRule.getAssimilationCount());
         System.out.println("Repulsion Count: " + updateRule.getRepulsionCount());
         System.out.println("Total Interaction Count: " + updateRule.getTotalInteractionCount());
+        System.out.println("Elapsed: " + elapsedMillis + " ms");
     }
 
     // 분포도 출력

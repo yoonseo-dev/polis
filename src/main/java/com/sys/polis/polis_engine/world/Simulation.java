@@ -1,13 +1,16 @@
-// 틱 루프와 가상 스레드 실행기를 관리하는 엔진 핵심 클래스.
-// 행위자들은 배열을 공유해서 읽는 대신, agents 리스트에서 얻은 이웃 Agent 참조를 직접 들고
-// 그 mailbox에 opinion을 넣는 "직접 참조 라우팅" 방식으로 통신한다.
+// M1-b 엔진 핵심 클래스 — 틱 병렬(M1-a) 골격 위에 메일박스를 얹은 실제 구동 구현체.
+// plan.md v2 재정의: 행위자 1명당 영속 가상 스레드가 도는 모델이 아니라,
+// 매 틱 invokeAll로 태스크를 새로 제출하고 배리어로 동기화하는 구조를 그대로 유지한다.
+// (영속 스레드 버전은 experimental/PersistentThreadSimulation.java에 M4용 프로토타입으로 분리해 둠 — 실제 구동에는 쓰지 않는다.)
 package com.sys.polis.polis_engine.world;
 
 import com.sys.polis.polis_engine.agent.Agent;
 import com.sys.polis.polis_engine.agent.AgentState;
+import com.sys.polis.polis_engine.agent.Message;
 import com.sys.polis.polis_engine.rule.UpdateRule;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -56,7 +59,7 @@ public class Simulation {
             sendTasks.add(() -> {
                 for (int neighborIndex : neighborIndexes) {
                     Agent neighbor = agents.get(neighborIndex); // 리스트에서 얻은 참조를 그대로 사용 — 직접 참조 라우팅
-                    neighbor.receiveMessage(self.getOpinion());
+                    neighbor.receiveMessage(self.getId(), self.getOpinion());
                 }
                 return null;
             });
@@ -69,12 +72,16 @@ public class Simulation {
         for (Agent self : agents) {
             receiveTasks.add(() -> {
                 List<AgentState> received = new ArrayList<>();
-                Double opinion;
+                Message message;
                 // pollMessage()는 논블로킹 — 아무도 이 행위자를 이웃으로 고르지 않았으면 즉시 null.
-                while ((opinion = self.pollMessage()) != null) {
-                    received.add(new AgentState(self.getId(), opinion));
+                while ((message = self.pollMessage()) != null) {
+                    received.add(new AgentState(message.senderId(), message.opinion()));
                 }
                 if (!received.isEmpty()) {
+                    // 한 틱에 여러 발신자가 같은 수신자를 고를 수 있어(같은 시드에서도 발생), 도착 순서는
+                    // 가상 스레드 스케줄러가 정한다 — 시드로 못 고정하는 순서다. 발신자 id로 정렬해 두면
+                    // "누가 이웃인지"뿐 아니라 "어떤 순서로 반영하는지"까지 시드만으로 재현 가능해진다.
+                    received.sort(Comparator.comparingInt(AgentState::id));
                     AgentState next = rule.update(self.getCurrentState(), received);
                     self.applyNextState(next);
                 }
