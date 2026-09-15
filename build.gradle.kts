@@ -1,36 +1,6 @@
-plugins {
-    id("java")
-    application
-}
-
-application {
-    mainClass = "com.sys.polis.Main"
-}
-
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
-}
-
-// 소스 파일은 UTF-8로 저장되는데, Windows 기본 플랫폼 인코딩(x-windows-949)으로
-// 읽으면 한글 주석이 깨져 컴파일이 실패한다. 인코딩을 명시적으로 고정한다.
-tasks.withType<JavaCompile> {
-    options.encoding = "UTF-8"
-}
-
-group = "me.songyoonseo"
-version = "1.0-SNAPSHOT"
-
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    testImplementation(platform("org.junit:junit-bom:5.10.0"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
-}
-
-tasks.test {
-    useJUnitPlatform()
+// 루트 빌드 스크립트 — M2-1(폴리스 엔진의 모듈 분리) 이후에는 각 모듈이 자기 플러그인·의존성을
+// 각자의 build.gradle.kts에서 선언한다. 루트에는 모든 서브모듈이 공유하는 최소 설정만 둔다.
+allprojects {
+    group = "me.songyoonseo"
+    version = "1.0-SNAPSHOT"
 }
