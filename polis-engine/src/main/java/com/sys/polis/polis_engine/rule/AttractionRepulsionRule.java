@@ -7,9 +7,12 @@ import java.util.concurrent.atomic.LongAdder;
 
 public class AttractionRepulsionRule implements UpdateRule {
 
-    private final double mu;// 학습률, 몇 퍼센트 동화될지.
+    // M2-4: 실행 중인 시뮬레이션의 파라미터를 재시작 없이 바꿀 수 있어야 해서(제어 API가 세터를
+    // 호출) final을 걷어내고 volatile로 바꿨다 — 세터를 호출하는 스레드(REST 요청 처리)와
+    // update()를 호출하는 스레드(시뮬레이션 루프)가 다르므로 가시성 보장이 필요하다.
+    private volatile double mu;// 학습률, 몇 퍼센트 동화될지.
 
-    private final double threshold;// 임계값(경계선)
+    private volatile double threshold;// 임계값(경계선)
 
     // 아래 세 카운터는 이 규칙 인스턴스 하나를 전체 행위자가 공유해서 호출하므로,
     // 특정 틱만의 값이 아니라 시뮬레이션 시작부터 누적된 "전체 인구 기준" 횟수다.
@@ -20,13 +23,23 @@ public class AttractionRepulsionRule implements UpdateRule {
 
     // 예외처리
     public AttractionRepulsionRule(double mu, double threshold) {
+        setMu(mu);
+        setThreshold(threshold);
+    }
+
+    // 실행 중에도 호출 가능 — 다음 update()부터 새 값이 적용된다(재시작 불필요).
+    public void setMu(double mu) {
         if (mu <= 0 || mu > 1) {
             throw new IllegalArgumentException("mu는 (0, 1] 범위여야 합니다: " + mu);
         }
+        this.mu = mu;
+    }
+
+    // 실행 중에도 호출 가능 — 다음 update()부터 새 값이 적용된다(재시작 불필요).
+    public void setThreshold(double threshold) {
         if (threshold <= 0 || threshold > 2) {
             throw new IllegalArgumentException("threshold는 (0, 2] 범위여야 합니다: " + threshold);
         }
-        this.mu = mu;
         this.threshold = threshold;
     }
 

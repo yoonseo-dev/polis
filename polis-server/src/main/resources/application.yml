@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: polis-server
+
+# 시뮬레이션 초기값. 서버 기동 시 자동 실행되지 않고, POST /api/simulation/start가 호출될
+# 때 이 값을 기본값으로 쓴다(SimulationRunner). Main.java M0 기본값과 동일하게 맞춰 콘솔
+# 결과와 비교 가능하게 둔다. mu/threshold는 실행 중에도 PATCH /api/simulation/params로 바꿀 수 있다.
+polis:
+  simulation:
+    agent-count: 100
+    tick-count: 200
+    mu: 0.01
+    threshold: 1.5
