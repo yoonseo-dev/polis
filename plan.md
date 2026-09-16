@@ -226,9 +226,18 @@ M6  (선택) Python 분석 레이어
     300ms 유예를 두는 실용적 방식으로 대체 — 로컬 인메모리 브로커의 구독 등록은 밀리초 단위라
     이 정도로 충분함을 반복 실행(연속 3회)으로 확인.
 
-- [ ] **M2-5 React + Canvas 히스토그램**
-  - 일반 DOM 아님 — Canvas. 시간에 따라 봉우리가 갈라지는 것 관찰.
-  - _검증:_ 콘솔에서 봤던 양극화가 화면에서 같은 모양으로 전개되는가.
+- [x] **M2-5 React + Canvas 히스토그램** (2026-09-16)
+  - `polis-front`(Vite + React) 신설. `useSnapshotStream`이 `@stomp/stompjs`로 `/topic/snapshots`를
+    구독(SockJS 없이 순수 WebSocket — 서버가 그렇게만 열어둠), `HistogramCanvas`가 매 스냅샷마다
+    20버킷을 Canvas에 다시 그린다(일반 DOM 아님). `ControlPanel` + `api.js`가 M2-4 REST
+    (`/api/simulation/start|stop|params|status`)를 그대로 노출.
+  - _백엔드 미변경:_ CORS를 추가하는 대신 `vite.config.js` dev proxy(`/api`, `/ws` →
+    `localhost:8080`)로 해결 — M2-4까지 검증된 서버 코드를 그대로 둔다.
+  - _검증(브라우저 실측, claude-in-chrome):_ 로컬에서 polis-server(테스트용 임시 포트) +
+    `npm run dev`를 동시에 띄우고 실제 클릭으로 확인. threshold=1.5(기존 baseline과 동일)로
+    시작 → 중앙 단봉으로 수렴. threshold=0.8로 재시작 → tick 200에서 -1.0/+1.0 양 끝에 두
+    봉우리(분산 0.9253, 극단값 비율 94.0%)로 갈라짐. **콘솔(M0)에서 봤던 양극화가 화면에서
+    같은 모양으로 재현됨을 확인.**
 
 - [ ] **M2-6 데모 녹화**
   - 30초~1분 GIF 또는 mp4. README 최상단에 삽입.
