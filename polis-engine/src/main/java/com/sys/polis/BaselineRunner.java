@@ -6,8 +6,8 @@
 package com.sys.polis;
 
 import com.sys.polis.polis_engine.agent.Agent;
-import com.sys.polis.polis_engine.agent.AgentState;
 import com.sys.polis.polis_engine.rule.AttractionRepulsionRule;
+import com.sys.polis.polis_engine.world.AgentFactory;
 import com.sys.polis.polis_engine.world.NeighborSelector;
 import com.sys.polis.polis_engine.world.Simulation;
 
@@ -33,11 +33,7 @@ public class BaselineRunner {
         AttractionRepulsionRule rule = new AttractionRepulsionRule(MU, THRESHOLD);
         Random random = new Random(INITIAL_OPINION_SEED);
 
-        List<Agent> agents = new ArrayList<>();
-        for (int i = 0; i < AGENT_COUNT; i++) {
-            double initialOpinion = -1.0 + 2.0 * random.nextDouble();
-            agents.add(new Agent(new AgentState(i, initialOpinion)));
-        }
+        List<Agent> agents = AgentFactory.createAgents(AGENT_COUNT, random);
 
         NeighborSelector neighborSelector = new NeighborSelector(AGENT_COUNT, new Random(NEIGHBOR_SEED));
         Simulation simulation = new Simulation(agents, neighborSelector, rule);

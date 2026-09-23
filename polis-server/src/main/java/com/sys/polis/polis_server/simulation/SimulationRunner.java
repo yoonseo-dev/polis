@@ -12,16 +12,15 @@
 package com.sys.polis.polis_server.simulation;
 
 import com.sys.polis.polis_engine.agent.Agent;
-import com.sys.polis.polis_engine.agent.AgentState;
 import com.sys.polis.polis_engine.metric.MetricCollector;
 import com.sys.polis.polis_engine.rule.AttractionRepulsionRule;
+import com.sys.polis.polis_engine.world.AgentFactory;
 import com.sys.polis.polis_engine.world.NeighborSelector;
 import com.sys.polis.polis_engine.world.Simulation;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -71,8 +70,8 @@ public class SimulationRunner {
         if (threshold != null) this.threshold = threshold;
         if (tickCount != null) this.tickCount = tickCount;
 
-        List<Agent> agents = createAgents(this.agentCount);
-        NeighborSelector neighborSelector = new NeighborSelector(this.agentCount, new Random(42));
+        List<Agent> agents = AgentFactory.createAgents(this.agentCount, new Random());
+        NeighborSelector neighborSelector = new NeighborSelector(this.agentCount, new Random());
         AttractionRepulsionRule rule = new AttractionRepulsionRule(this.mu, this.threshold);
         this.liveRule = rule;
         Simulation simulation = new Simulation(agents, neighborSelector, rule);
@@ -143,16 +142,6 @@ public class SimulationRunner {
 
     private void publish(MetricCollector.Snapshot snapshot) {
         messagingTemplate.convertAndSend(SNAPSHOT_DESTINATION, snapshot);
-    }
-
-    private List<Agent> createAgents(int agentCount) {
-        Random initialOpinionRandom = new Random(100);
-        List<Agent> agents = new ArrayList<>();
-        for (int i = 0; i < agentCount; i++) {
-            double initialOpinion = -1.0 + 2.0 * initialOpinionRandom.nextDouble();
-            agents.add(new Agent(new AgentState(i, initialOpinion)));
-        }
-        return agents;
     }
 
     public record StatusView(boolean running, int agentCount, int tickCount, double mu, double threshold) {

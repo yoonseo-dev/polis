@@ -13,6 +13,7 @@ import com.sys.polis.polis_engine.agent.Agent;
 import com.sys.polis.polis_engine.agent.AgentState;
 import com.sys.polis.polis_engine.agent.Message;
 import com.sys.polis.polis_engine.rule.UpdateRule;
+import com.sys.polis.polis_engine.world.AgentFactory;
 import com.sys.polis.polis_engine.world.NeighborSelector;
 
 import java.util.ArrayList;
@@ -108,10 +109,7 @@ public class PersistentThreadSimulation {
         long durationMillis = args.length > 1 ? Long.parseLong(args[1]) : 2000;
 
         Random random = new Random(100);
-        List<Agent> agents = new ArrayList<>();
-        for (int i = 0; i < agentCount; i++) {
-            agents.add(new Agent(new AgentState(i, -1.0 + 2.0 * random.nextDouble())));
-        }
+        List<Agent> agents = AgentFactory.createAgents(agentCount, random);
 
         NeighborSelector neighborSelector = new NeighborSelector(agentCount, new Random(42));
         UpdateRule rule = new AttractionRepulsionRule(0.01, 1.5);

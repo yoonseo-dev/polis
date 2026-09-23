@@ -253,7 +253,18 @@ README에 그 장면이 GIF로 박혀 있다.
 
 > 질문을 갈아끼우는 관문. 여기까지 되면 이후 확장은 전부 "구현체 하나 추가"가 된다.
 
-- [ ] **M3-1 UpdateRule 전략 인터페이스 확정** — 엔진이 인터페이스 하나만 알도록
+- [x] **M3-1 UpdateRule 전략 인터페이스 확정** — 엔진이 인터페이스 하나만 알도록 (2026-09-21)
+  - _확인:_ `Simulation`·`NeighborSelector`·`Agent`·`MetricCollector`(엔진 코어)는 이미 `UpdateRule`만
+    참조하고 `AttractionRepulsionRule`을 import하지 않는다(grep). 시그니처
+    `update(self, neighbors) → AgentState`는 바꾸지 않고 확정 — 에코챔버(선택적 수용)·집단 변수
+    (`AgentState` 필드 추가)도 이 형태로 표현 가능하다고 판단.
+  - _한 일:_ `UpdateRule`에 계약을 Javadoc으로 명시(이웃 id 오름차순, 빈 이웃이면 미호출, 불변 반환,
+    스레드 안전성, 결정성)하고 `@FunctionalInterface` 부여. `SimulationRuleContractTest`로 임의
+    구현체(람다)로 엔진이 돌고 계약대로 호출되는지 검증 — **PASS.**
+  - _아직 남은 결합(M3-3에서 해결):_ `SimulationRunner`(서버)가 `AttractionRepulsionRule`을 직접 들고
+    `setMu/setThreshold`를 호출한다. 규칙을 화면에서 바꾸려면 서버가 규칙 종류·파라미터를 일반화해서
+    다뤄야 한다. 또 "비슷한 의견의 이웃을 더 자주 만나기"식 에코챔버를 하려면 이웃 선택(`NeighborSelector`)
+    쪽 추상화가 필요할 수 있다 — M3-2 규칙 선택 시 함께 판단.
 - [ ] **M3-2 두 번째 구현체로 검증** — 아무 규칙이든 하나 더 만들어 교체가 실제로 되는지 확인
 - [ ] **M3-3 UI에서 규칙 전환** — 화면에서 버튼으로 모델 교체
 

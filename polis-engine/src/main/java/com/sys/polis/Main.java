@@ -1,13 +1,12 @@
 // M0 진입점 — 행위자 목록을 생성하고, 매 틱마다 무작위 이웃과 상호작용시킨 뒤, 콘솔에서 양극화 여부를 확인한다.
 package com.sys.polis;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
 import com.sys.polis.polis_engine.agent.Agent;
-import com.sys.polis.polis_engine.agent.AgentState;
 import com.sys.polis.polis_engine.rule.AttractionRepulsionRule;
+import com.sys.polis.polis_engine.world.AgentFactory;
 import com.sys.polis.polis_engine.world.NeighborSelector;
 import com.sys.polis.polis_engine.world.Simulation;
 
@@ -29,20 +28,16 @@ public class Main {
 
         AttractionRepulsionRule updateRule = new AttractionRepulsionRule(mu, threshold);
 
-        // 재현 가능한 실험을 위해 Random에 고정 시드 사용(초기 분포 생성 시 동일한 랜덤값 생성)
-        Random random = new Random(100);
+        // 임시: 고정 시드(100) 대신 시드 없이 생성 — 실행할 때마다 초기 분포가 달라진다.
+        Random random = new Random();
 
         // 초기 행위자 목록 생성 — opinion 초기값은 [-1, 1] 균등 랜덤 분포
-        List<Agent> agents = new ArrayList<>();
-        for (int i = 0; i < AGENT_COUNT; i++) {
-            double initialOpinion = -1.0 + 2.0 * random.nextDouble(); // [-1, 1] 균등 랜덤
-            agents.add(new Agent(new AgentState(i, initialOpinion)));
-        }
+        List<Agent> agents = AgentFactory.createAgents(AGENT_COUNT, random);
 
         // 어떤 이웃을 만날지는 NeighborSelector로 분리한다.
-        // 이 Random(42)는 매 틱 selectNeighbors()를 호출할 때마다 소비되므로,
-        // 같은 시드라도 틱이 진행될수록 다른 이웃이 무작위로 뽑힌다.
-        NeighborSelector neighborSelector = new NeighborSelector(AGENT_COUNT, new Random(42));
+        // 임시: 고정 시드(42) 대신 시드 없는 Random 사용 — 실행마다 이웃 선택도 달라진다.
+        // 이 Random은 매 틱 selectNeighbors()를 호출할 때마다 소비되므로, 틱이 진행될수록 다른 이웃이 무작위로 뽑힌다.
+        NeighborSelector neighborSelector = new NeighborSelector(AGENT_COUNT, new Random());
 
         // 시뮬레이션 생성 — agents, neighborSelector, updateRule을 받아 틱 루프(직접 참조 라우팅)를 관리한다.
         Simulation simulation = new Simulation(agents, neighborSelector, updateRule);
