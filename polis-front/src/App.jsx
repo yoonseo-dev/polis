@@ -27,7 +27,7 @@ function App() {
 
   return (
     <main style={{ maxWidth: '720px', margin: '0 auto', padding: '24px' }}>
-      <h1>Polis — 의견 분포</h1>
+      <h1>의견 분포</h1>
       <p>
         WebSocket: {connected ? '연결됨' : '연결 안 됨'} · 시뮬레이션:{' '}
         {status?.running ? '실행 중' : '정지'}

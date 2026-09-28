@@ -14,7 +14,7 @@ export function ControlPanel({ status, onStart, onStop, onApplyParams }) {
       onSubmit={(e) => e.preventDefault()}
     >
       <label>
-        agentCount
+        행위자 수
         <input
           type="number"
           value={agentCount}
@@ -23,7 +23,7 @@ export function ControlPanel({ status, onStart, onStop, onApplyParams }) {
         />
       </label>
       <label>
-        tickCount
+        틱 수
         <input
           type="number"
           value={tickCount}
@@ -32,7 +32,7 @@ export function ControlPanel({ status, onStart, onStop, onApplyParams }) {
         />
       </label>
       <label>
-        μ (학습률)
+        학습률
         <input
           type="number"
           value={mu}
@@ -43,7 +43,7 @@ export function ControlPanel({ status, onStart, onStop, onApplyParams }) {
         />
       </label>
       <label>
-        threshold
+        임계값
         <input
           type="number"
           value={threshold}

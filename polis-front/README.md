@@ -7,7 +7,7 @@ M2-5: `polis-server`가 `/topic/snapshots`로 미는 매 틱 스냅샷(히스토
 ## 실행
 
 ```
-# 1) polis-server를 8080에서 먼저 띄운다 (repo 루트에서)
+# 1) polis-server를 8090에서 먼저 띄운다 (repo 루트에서, 8080은 다른 프로세스와 충돌해 변경)
 ./gradlew :polis-server:bootRun
 
 # 2) 이 디렉터리에서 dev 서버 실행
@@ -15,8 +15,9 @@ npm install
 npm run dev
 ```
 
-`vite.config.js`의 dev 서버 proxy가 `/api`, `/ws`를 `http://localhost:8080`(polis-server
-기본 포트)으로 중계한다 — 백엔드에 CORS 설정을 얹지 않고 프론트만으로 해결한다.
+`vite.config.js`의 dev 서버 proxy가 `/api`, `/ws`를 `http://localhost:8090`(polis-server
+포트, `application.yml`의 `server.port`)으로 중계한다 — 백엔드에 CORS 설정을 얹지 않고
+프론트만으로 해결한다.
 
 ## 확인한 것
 

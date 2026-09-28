@@ -100,6 +100,21 @@ polis-front/             (React) — Canvas 시각화, 파라미터 제어 UI
 
 ---
 
+## 4-1. 실행 명령어
+
+- **polis-server (Spring Boot 백엔드) 실행:** 프로젝트 루트에서
+  ```
+  ./gradlew :polis-server:bootRun
+  ```
+  (Windows PowerShell에서는 `.\gradlew.bat :polis-server:bootRun`)
+- **포트: 8090** (`polis-server/src/main/resources/application.yml`의 `server.port`). 기본값
+  8080이 다른 프로세스와 충돌해 변경함 — `polis-front/vite.config.js`의 dev proxy도 8090을
+  바라보므로 프론트와 함께 맞춰뒀다. 포트를 또 바꾸면 두 곳(application.yml, vite.config.js)을
+  같이 바꿔야 한다.
+- polis-engine은 polis-server가 의존성으로 가져다 쓰므로 별도 실행 불필요(라이브러리 모듈).
+
+---
+
 ## 5. 마일스톤
 
 |               | 내용                                                 | 검증                       |

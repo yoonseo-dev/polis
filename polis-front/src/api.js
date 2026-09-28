@@ -1,5 +1,5 @@
 // polis-server(SimulationController, M2-4) REST 클라이언트. vite dev proxy가 /api를
-// http://localhost:8080으로 중계하므로 여기서는 상대 경로만 쓴다(vite.config.js 참조).
+// http://localhost:8090으로 중계하므로 여기서는 상대 경로만 쓴다(vite.config.js 참조).
 const BASE = '/api/simulation'
 
 async function postJson(path, body) {

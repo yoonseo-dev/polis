@@ -56,11 +56,11 @@ export function HistogramCanvas({ histogram }) {
       ctx.fillStyle = '#6b6375'
       ctx.font = '12px system-ui, sans-serif'
       ctx.textAlign = 'left'
-      ctx.fillText('-1.0 (극좌)', 2, height - 6)
+      ctx.fillText('-1.0 (극)', 2, height - 6)
       ctx.textAlign = 'center'
       ctx.fillText('0 (중도)', width / 2, height - 6)
       ctx.textAlign = 'right'
-      ctx.fillText('+1.0 (극우)', width - 2, height - 6)
+      ctx.fillText('+1.0 (극)', width - 2, height - 6)
     }
 
     draw()
